@@ -6,11 +6,11 @@
 
 void Ghost::Init(GhostType t, int startGX, int startGY, Play::Colour col)
 {
-        type = t; gx = startGX; gy = startGY;
-        pos = target = CenterOf(gx, gy);
-        dir = { 0,0 };
-       colour = col;
-       baseColour = col;
+	type = t; gx = startGX; gy = startGY;
+	pos = target = CenterOf(gx, gy);
+	dir = { 0,0 };
+	colour = col;
+	baseColour = col;
 }
 
 Play::Point2f Ghost::TickAI(const Game* game, int pacGX, int pacGY) const
@@ -63,7 +63,9 @@ void Ghost::Update(Game* game, int pacGX, int pacGY, float dt)
 
 		int nx = gx + int(next.x), ny = gy + int(next.y);
 		if (!game->IsWall(nx, ny))
+		{
 			dir = next;
+		}			
 		else
 		{
 			// blocked in chosen dir; stop if forward also blocked
@@ -82,9 +84,9 @@ void Ghost::Update(Game* game, int pacGX, int pacGY, float dt)
 	float dist = std::sqrt(d.x * d.x + d.y * d.y);
 	float step = speed * dt;
 
-	if (dist < 0.0001f || step >= dist) 
-	{ 
-		pos = target; return; 
+	if (dist < 0.0001f || step >= dist)
+	{
+		pos = target; return;
 	}
 
 	pos.x += (d.x / dist) * step;

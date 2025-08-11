@@ -13,10 +13,22 @@ void Pacman::Init(int startGX, int startGY)
 
 void Pacman::HandleInput()
 {
-	if (Play::KeyDown(Play::KEY_UP))    queued = { 0, 1 };
-	if (Play::KeyDown(Play::KEY_DOWN))  queued = { 0,-1 };
-	if (Play::KeyDown(Play::KEY_LEFT))  queued = {-1, 0 };
-	if (Play::KeyDown(Play::KEY_RIGHT)) queued = { 1, 0 };
+	if (Play::KeyDown(Play::KEY_UP))
+	{
+		queued = { 0, 1 };
+	}
+	if (Play::KeyDown(Play::KEY_DOWN))
+	{
+		queued = { 0,-1 };
+	}
+	if (Play::KeyDown(Play::KEY_LEFT))
+	{
+		queued = { -1, 0 };
+	}
+	if (Play::KeyDown(Play::KEY_RIGHT))
+	{
+		queued = { 1, 0 };
+	}
 }
 
 void Pacman::StepTowards(const Play::Point2f& tgt, float dt)
@@ -36,26 +48,26 @@ void Pacman::Update(Game* game, float dt)
 		gx = int(pos.x) / Cfg::TILE_SIZE;
 		gy = int(pos.y) / Cfg::TILE_SIZE;
 
-               // Eat pellet or power-up
-               if (game->InBounds(gx, gy))
-               {
-                       if (game->maze[gy][gx] == TILE_PELLET)
-                       {
-                               game->maze[gy][gx] = TILE_EMPTY;
-                       }
-                       else if (game->maze[gy][gx] == TILE_POWERUP)
-                       {
-                               game->maze[gy][gx] = TILE_EMPTY;
-                               game->ActivatePowerUp();
-                       }
-               }
+		// Eat pellet or power-up
+		if (game->InBounds(gx, gy))
+		{
+			if (game->maze[gy][gx] == TILE_PELLET)
+			{
+				game->maze[gy][gx] = TILE_EMPTY;
+			}
+			else if (game->maze[gy][gx] == TILE_POWERUP)
+			{
+				game->maze[gy][gx] = TILE_EMPTY;
+				game->ActivatePowerUp();
+			}
+		}
 
 		// Try queued first
 		int qx = gx + int(queued.x), qy = gy + int(queued.y);
 		if ((queued.x || queued.y) && !game->IsWall(qx, qy))
 		{
 			dir = queued;
-		}			
+		}
 		else
 		{
 			int cx = gx + int(dir.x), cy = gy + int(dir.y);

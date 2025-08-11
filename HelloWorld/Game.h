@@ -15,23 +15,23 @@ public:
 	Game();
 
 	bool InBounds(int x, int y) const;
-        bool IsWall(int x, int y) const;
+	bool IsWall(int x, int y) const;
 
-        void BuildArena();
-       void SpawnPowerUp();
-       void ActivatePowerUp();
+	void BuildArena();
+	void SpawnPowerUp();
+	void ActivatePowerUp();
 
-        void Init();
-        void DrawMaze() const;
+	void Init();
+	void DrawMaze() const;
 
-        void Update(float dt);
+	void Update(float dt);
 
 	void Draw() const;
 
-        // Variables
-        TileType maze[Cfg::GRID_HEIGHT][Cfg::GRID_WIDTH]{};
-        Pacman* pac;
-        std::vector<Ghost*> ghosts;
-       float powerUpTimer = 0.0f;
-       bool powerUpPresent = false;
+	// Variables
+	TileType maze[Cfg::GRID_HEIGHT][Cfg::GRID_WIDTH]{};
+	Pacman* pac;
+	std::vector<Ghost*> ghosts;
+	float powerUpTimer = 0.0f;
+	bool powerUpPresent = false;
 };
