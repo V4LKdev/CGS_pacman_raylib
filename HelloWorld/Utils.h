@@ -4,18 +4,21 @@
 
 struct Cfg
 {
-	static constexpr int TILE_SIZE = 16;
-	static constexpr int GRID_WIDTH = 28;
-	static constexpr int GRID_HEIGHT = 31;
-	static constexpr int DISPLAY_W = GRID_WIDTH * TILE_SIZE;
-	static constexpr int DISPLAY_H = GRID_HEIGHT * TILE_SIZE;
-	static constexpr int DISPLAY_SCALE = 2;
+        static constexpr int TILE_SIZE = 16;
+        static constexpr int GRID_WIDTH = 28;
+        static constexpr int GRID_HEIGHT = 31;
+        static constexpr int DISPLAY_W = GRID_WIDTH * TILE_SIZE;
+        static constexpr int DISPLAY_H = GRID_HEIGHT * TILE_SIZE;
+        static constexpr int DISPLAY_SCALE = 2;
+        // Duration that a power-up remains active in seconds
+        static constexpr float POWERUP_DURATION = 5.0f;
 };
 
-enum TileType { 
-	TILE_WALL,
-	TILE_EMPTY,
-	TILE_PELLET 
+enum TileType {
+        TILE_WALL,
+        TILE_EMPTY,
+       TILE_PELLET,
+       TILE_POWERUP
 };
 
 inline Play::Point2f CenterOf(int gx, int gy)

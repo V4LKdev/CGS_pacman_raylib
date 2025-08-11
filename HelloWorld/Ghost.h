@@ -34,7 +34,10 @@ public:
 	int gx = 0, gy = 0;
 	Play::Point2f pos{ 0,0 };
 	Play::Point2f target{ 0,0 };
-	Play::Point2f dir{ 0,0 };
-	float speed = 80.0f;
-	Play::Colour colour{ Play::cRed };
+        Play::Point2f dir{ 0,0 };
+        float speed = 80.0f;
+       // Current colour (may change when power-up active)
+       Play::Colour colour{ Play::cRed };
+       // Stored default colour to restore after power-up expires
+       Play::Colour baseColour{ Play::cRed };
 };
