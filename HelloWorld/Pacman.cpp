@@ -36,11 +36,19 @@ void Pacman::Update(Game* game, float dt)
 		gx = int(pos.x) / Cfg::TILE_SIZE;
 		gy = int(pos.y) / Cfg::TILE_SIZE;
 
-		// Eat pellet
-		if (game->InBounds(gx, gy) && game->maze[gy][gx] == TILE_PELLET)
-		{
-			game->maze[gy][gx] = TILE_EMPTY;
-		}			
+               // Eat pellet or power-up
+               if (game->InBounds(gx, gy))
+               {
+                       if (game->maze[gy][gx] == TILE_PELLET)
+                       {
+                               game->maze[gy][gx] = TILE_EMPTY;
+                       }
+                       else if (game->maze[gy][gx] == TILE_POWERUP)
+                       {
+                               game->maze[gy][gx] = TILE_EMPTY;
+                               game->ActivatePowerUp();
+                       }
+               }
 
 		// Try queued first
 		int qx = gx + int(queued.x), qy = gy + int(queued.y);

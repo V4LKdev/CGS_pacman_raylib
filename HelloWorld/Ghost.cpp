@@ -6,10 +6,11 @@
 
 void Ghost::Init(GhostType t, int startGX, int startGY, Play::Colour col)
 {
-	type = t; gx = startGX; gy = startGY;
-	pos = target = CenterOf(gx, gy);
-	dir = { 0,0 };
-	colour = col;
+        type = t; gx = startGX; gy = startGY;
+        pos = target = CenterOf(gx, gy);
+        dir = { 0,0 };
+       colour = col;
+       baseColour = col;
 }
 
 Play::Point2f Ghost::TickAI(const Game* game, int pacGX, int pacGY) const
