@@ -165,11 +165,11 @@ void Game::Draw() const
 		for (int x = 0; x < Cfg::GRID_WIDTH; ++x)
 		{
 			if (maze[y][x] == TILE_PELLET) pelletsLeft = true;
-		}			
-	}		
+		}
+	}
 
 	if (!pelletsLeft)
 	{
 		Play::DrawDebugText({ Cfg::DISPLAY_W / 2, Cfg::DISPLAY_H / 2 }, "YOU WIN!");
-	}		
+	}
 }

@@ -8,7 +8,7 @@ void Ghost::Init(GhostType t, int startGX, int startGY, Play::Colour col)
 {
 	type = t; gx = startGX; gy = startGY;
 	pos = target = CenterOf(gx, gy);
-	dir = { 0,0 };
+	dir = {0, 0};
 	colour = col;
 	baseColour = col;
 }
@@ -72,7 +72,7 @@ void Ghost::Update(Game* game, int pacGX, int pacGY, float dt)
 			int fx = gx + int(dir.x), fy = gy + int(dir.y);
 			if (game->IsWall(fx, fy))
 			{
-				dir = { 0,0 };
+				dir = {0, 0};
 			}
 		}
 

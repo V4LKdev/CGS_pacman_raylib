@@ -1,9 +1,5 @@
-// Defines for Playbuffer
-#define PLAY_IMPLEMENTATION
-#define PLAY_USING_GAMEOBJECT_MANAGER
-
 // Includes
-#include "Play.h"
+#include "Utils.h"
 #include "Game.h"
 
 // Our game instance

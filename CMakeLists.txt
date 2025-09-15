@@ -11,6 +11,8 @@ add_executable(PacmanRaylib
     HelloWorld/Game.cpp
     HelloWorld/Pacman.cpp
     HelloWorld/Ghost.cpp
+    HelloWorld/RaylibPlayMain.cpp
+    HelloWorld/RaylibPlayCompat.h
 )
 
 target_include_directories(PacmanRaylib PUBLIC HelloWorld)

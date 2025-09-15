@@ -8,18 +8,18 @@ void Pacman::Init(int startGX, int startGY)
 {
 	gx = startGX; gy = startGY;
 	pos = target = CenterOf(gx, gy);
-	dir = queued = { 0,0 };
+	dir = queued = Play::Point2f(0, 0);
 }
 
 void Pacman::HandleInput()
 {
 	if (Play::KeyDown(Play::KEY_UP))
 	{
-		queued = { 0, 1 };
+		queued = { 0, -1 };
 	}
 	if (Play::KeyDown(Play::KEY_DOWN))
 	{
-		queued = { 0,-1 };
+		queued = { 0,1 };
 	}
 	if (Play::KeyDown(Play::KEY_LEFT))
 	{

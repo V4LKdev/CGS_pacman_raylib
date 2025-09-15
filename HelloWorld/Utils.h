@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Play.h"
+#include "RaylibPlayCompat.h"
 
 struct Cfg
 {
@@ -23,8 +23,8 @@ enum TileType {
 
 inline Play::Point2f CenterOf(int gx, int gy)
 {
-	return { gx * Cfg::TILE_SIZE + Cfg::TILE_SIZE / 2,
-			 gy * Cfg::TILE_SIZE + Cfg::TILE_SIZE / 2 };
+	    return Play::Point2f(gx * Cfg::TILE_SIZE + Cfg::TILE_SIZE / 2,
+                         gy * Cfg::TILE_SIZE + Cfg::TILE_SIZE / 2);
 }
 
 inline bool AtCenter(const Play::Point2f& a, const Play::Point2f& b)
