@@ -27,6 +27,6 @@ compile_commands.json
 *.out
 pacman
 
-# JetBrains Rider (user-specific)
+# JetBrains CLion (user-specific)
 .idea/workspace.xml
 .idea/shelf/
