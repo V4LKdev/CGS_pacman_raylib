@@ -122,7 +122,7 @@ inline void DrawCircle(const Point2f& center, int radius, const Colour& colour) 
 }
 
 inline void DrawDebugText(const Point2f& pos, const char* text) {
-    constexpr int fontSize = 20;
+    constexpr int fontSize = 30;
     const int textWidth = MeasureText(text, fontSize);
     const int x = static_cast<int>(pos.x - static_cast<float>(textWidth) / 2);
     const int y = static_cast<int>(pos.y - static_cast<float>(fontSize) / 2);
@@ -130,14 +130,3 @@ inline void DrawDebugText(const Point2f& pos, const char* text) {
 }
 
 } // namespace Play
-
-// =========================
-// Play Compatibility Macros
-// =========================
-#ifndef PLAY_IGNORE_COMMAND_LINE
-#define PLAY_IGNORE_COMMAND_LINE
-#endif
-
-#ifndef PLAY_OK
-#define PLAY_OK 0
-#endif

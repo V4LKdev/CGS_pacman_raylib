@@ -21,10 +21,10 @@ enum TileType {
        TILE_POWERUP
 };
 
-inline Play::Point2f CenterOf(int gx, int gy)
+inline Play::Point2f CenterOf(const int gx, const int gy)
 {
-	    return Play::Point2f(gx * Cfg::TILE_SIZE + Cfg::TILE_SIZE / 2,
-                         gy * Cfg::TILE_SIZE + Cfg::TILE_SIZE / 2);
+	    return {gx * Cfg::TILE_SIZE + Cfg::TILE_SIZE / 2,
+                         gy * Cfg::TILE_SIZE + Cfg::TILE_SIZE / 2};
 }
 
 inline bool AtCenter(const Play::Point2f& a, const Play::Point2f& b)

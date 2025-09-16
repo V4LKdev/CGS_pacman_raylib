@@ -4,6 +4,7 @@
 // Other includes
 #include "Ghost.h"
 #include "Pacman.h"
+#include <random>
 
 Game::Game()
 {
@@ -16,7 +17,7 @@ Game::Game()
 	}
 }
 
-bool Game::InBounds(int x, int y) const
+bool Game::InBounds(int x, int y)
 {
 	return x >= 0 && y >= 0 && x < Cfg::GRID_WIDTH && y < Cfg::GRID_HEIGHT;
 }
@@ -37,7 +38,7 @@ void Game::BuildArena()
 	{
 		for (int x = 0; x < Cfg::GRID_WIDTH; ++x)
 		{
-			bool border = (x == 0 || y == 0 || x == Cfg::GRID_WIDTH - 1 || y == Cfg::GRID_HEIGHT - 1);
+			const bool border = (x == 0 || y == 0 || x == Cfg::GRID_WIDTH - 1 || y == Cfg::GRID_HEIGHT - 1);
 			maze[y][x] = border ? TILE_WALL : TILE_PELLET;
 		}
 	}
@@ -53,16 +54,20 @@ void Game::SpawnPowerUp()
 		{
 			if (maze[y][x] == TILE_PELLET)
 			{
-				candidates.push_back({ x, y });
-			}				
+				candidates.emplace_back( x, y );
+			}
 		}
 	}
 
 	if (!candidates.empty())
 	{
-		int idx = std::rand() % candidates.size();
-		Play::Point2f choice = candidates[idx];
-		maze[(int)choice.x][(int)choice.x] = TILE_POWERUP;
+		static std::random_device rd;
+		static std::mt19937 rand(rd());
+		std::uniform_int_distribution<int> dist(0, static_cast<int>(candidates.size()) - 1);
+
+		const int idx = dist(rand);
+		const Play::Point2f choice = candidates[idx];
+		maze[static_cast<int>(choice.x)][static_cast<int>(choice.x)] = TILE_POWERUP;
 		powerUpPresent = true;
 	}
 }
@@ -74,19 +79,20 @@ void Game::ActivatePowerUp()
 	for (auto* g : ghosts)
 	{
 		g->colour = Play::cBlue;
+		// TODO: implement state change here
 	}
 }
 
 void Game::Init()
 {
-	std::srand(12345);
 	BuildArena();
 
 	// Player start
 	pac->Init(13 - 4, 23);
 
 	// Ghosts
-	int cx = Cfg::GRID_WIDTH / 2, cy = Cfg::GRID_HEIGHT / 2;
+	constexpr int cx = Cfg::GRID_WIDTH / 2;
+	constexpr int cy = Cfg::GRID_HEIGHT / 2;
 	ghosts[0]->Init(BLINKY, cx - 2, cy, Play::cRed);
 	ghosts[1]->Init(INKY, cx, cy, Play::cCyan);
 	ghosts[2]->Init(PINKY, cx + 2, cy, Play::cMagenta);
@@ -133,6 +139,7 @@ void Game::Update(float dt)
 			for (auto* g : ghosts)
 			{
 				g->colour = g->baseColour;
+				// TODO: implement state change here
 			}				
 		}
 	}

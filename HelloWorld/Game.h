@@ -14,7 +14,7 @@ public:
 	// Functions
 	Game();
 
-	bool InBounds(int x, int y) const;
+	static bool InBounds(int x, int y);
 	bool IsWall(int x, int y) const;
 
 	void BuildArena();

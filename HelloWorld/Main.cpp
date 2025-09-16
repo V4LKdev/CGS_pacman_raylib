@@ -5,7 +5,7 @@
 // Our game instance
 static Game GameInstance;
 
-void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
+void MainGameEntry()
 {
 	Play::CreateManager(Cfg::DISPLAY_W, Cfg::DISPLAY_H, Cfg::DISPLAY_SCALE);
 	GameInstance.Init();
@@ -26,5 +26,5 @@ bool MainGameUpdate(float elapsed)
 int MainGameExit()
 {
 	Play::DestroyManager();
-	return PLAY_OK;
+	return 0;
 }

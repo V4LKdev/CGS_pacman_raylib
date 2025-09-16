@@ -12,13 +12,9 @@ class Pacman
 public:
 	// Functions
 	void Init(int startGX, int startGY);
-
 	void HandleInput();
-
 	void StepTowards(const Play::Point2f& tgt, float dt);
-
 	void Update(Game* game, float dt);
-
 	void Draw() const;
 
 	// Variables
