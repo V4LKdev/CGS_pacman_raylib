@@ -6,7 +6,8 @@
 
 void Pacman::Init(int startGX, int startGY)
 {
-	gx = startGX; gy = startGY;
+	gx = spawnGX = startGX;
+	gy = spawnGY = startGY;
 	pos = target = CenterOf(gx, gy);
 	dir = queued = Play::Point2f(0, 0);
 }
@@ -39,6 +40,8 @@ void Pacman::StepTowards(const Play::Point2f& tgt, float dt)
 	if (dist < 0.0001f || step >= dist) { pos = tgt; return; }
 	pos.x += (d.x / dist) * step;
 	pos.y += (d.y / dist) * step;
+
+	startedMoving = true;
 }
 
 void Pacman::Update(Game* game, float dt)
@@ -89,3 +92,10 @@ void Pacman::Draw() const
 {
 	Play::DrawCircle(pos, Cfg::TILE_SIZE / 2 - 2, Play::cYellow);
 }
+
+void Pacman::ResetToSpawn()
+{
+	Init(spawnGX, spawnGY);
+	startedMoving = false;
+}
+

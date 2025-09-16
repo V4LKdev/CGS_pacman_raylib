@@ -32,6 +32,35 @@ bool Game::IsWall(int x, int y) const
 	return maze[y][x] == TILE_WALL;
 }
 
+Play::Point2f Game::GetScatterTarget(GhostType type) const
+{
+	switch (type)
+	{
+	case GhostType::BLINKY: return { Cfg::GRID_WIDTH - 2, 1 };                 // top-right
+	case GhostType::PINKY:  return { 1, 1 };                                   // top-left
+	case GhostType::INKY:   return { Cfg::GRID_WIDTH - 2, Cfg::GRID_HEIGHT-2 };// bottom-right
+	case GhostType::CLYDE:  return { 1, Cfg::GRID_HEIGHT - 2 };                // bottom-left
+	}
+	return {0,0};
+}
+
+Play::Point2f Game::GetPacDirection() const
+{
+	return pac->dir;
+}
+
+Play::Point2f Game::GetGhostGrid(GhostType type) const
+{
+	for (auto* g : ghosts)
+	{
+		if (g->type == type)
+		{
+			return { (float)g->gx, (float)g->gy };
+		}
+	}
+	return {0,0}; // fallback
+}
+
 void Game::BuildArena()
 {
 	for (int y = 0; y < Cfg::GRID_HEIGHT; ++y)
@@ -67,7 +96,7 @@ void Game::SpawnPowerUp()
 
 		const int idx = dist(rand);
 		const Play::Point2f choice = candidates[idx];
-		maze[static_cast<int>(choice.x)][static_cast<int>(choice.x)] = TILE_POWERUP;
+		maze[static_cast<int>(choice.y)][static_cast<int>(choice.x)] = TILE_POWERUP;
 		powerUpPresent = true;
 	}
 }
@@ -78,8 +107,7 @@ void Game::ActivatePowerUp()
 	powerUpPresent = false;
 	for (auto* g : ghosts)
 	{
-		g->colour = Play::cBlue;
-		// TODO: implement state change here
+		g->EnterFrightened();
 	}
 }
 
@@ -93,10 +121,10 @@ void Game::Init()
 	// Ghosts
 	constexpr int cx = Cfg::GRID_WIDTH / 2;
 	constexpr int cy = Cfg::GRID_HEIGHT / 2;
-	ghosts[0]->Init(BLINKY, cx - 2, cy, Play::cRed);
-	ghosts[1]->Init(INKY, cx, cy, Play::cCyan);
-	ghosts[2]->Init(PINKY, cx + 2, cy, Play::cMagenta);
-	ghosts[3]->Init(CLYDE, cx, cy + 2, Play::cOrange);
+	ghosts[0]->Init(GhostType::BLINKY, cx - 2, cy, Play::cRed);
+	ghosts[1]->Init(GhostType::INKY, cx, cy, Play::cCyan);
+	ghosts[2]->Init(GhostType::PINKY, cx + 2, cy, Play::cMagenta);
+	ghosts[3]->Init(GhostType::CLYDE, cx, cy + 2, Play::cOrange);
 
 	SpawnPowerUp();
 }
@@ -127,6 +155,25 @@ void Game::DrawMaze() const
 
 void Game::Update(float dt)
 {
+	if (powerUpTimer <= 0.0f)
+	{
+		modeTimer -= dt;
+		if (modeTimer <= 0.0f)
+		{
+			if (globalMode == GlobalMode::Scatter)
+			{
+				globalMode = GlobalMode::Chase;
+				modeTimer = 20.0f; // chase lasts 20s
+			} else {
+				globalMode = GlobalMode::Scatter;
+				modeTimer = 7.0f; // scatter lasts 7s
+			}
+			for (auto* g : ghosts) {
+				g->OnGlobalModeChange(globalMode);
+			}
+		}
+	}
+
 	pac->HandleInput();
 	pac->Update(this, dt);
 
@@ -138,8 +185,7 @@ void Game::Update(float dt)
 			powerUpTimer = 0.0f;
 			for (auto* g : ghosts)
 			{
-				g->colour = g->baseColour;
-				// TODO: implement state change here
+				g->ExitFrightened();
 			}				
 		}
 	}
@@ -152,7 +198,40 @@ void Game::Update(float dt)
 	for (auto* g : ghosts)
 	{
 		g->Update(this, pac->gx, pac->gy, dt);
-	}		
+
+		// Collision Check with Pacman
+		if (g->state == GhostState::Eaten) continue;
+
+		if (CheckCollision(pac->pos, g->pos))
+		{
+			if (g->state == GhostState::Frightened)
+			{
+				g->SetEaten();
+			}
+			else if (g->state != GhostState::Eaten)
+			{
+				pac->ResetToSpawn();
+				for (auto* ghost : ghosts)
+					ghost->ResetToSpawn();
+				gameStarted = false;
+			}
+		}
+	}
+
+
+
+	// Changes ghosts from idle to scatter when Pacman starts moving
+	if (!gameStarted && pac->startedMoving)
+	{
+		gameStarted = true;
+		for (auto* g : ghosts)
+		{
+			if (g->state == GhostState::Idle)
+			{
+				g->state = GhostState::Scatter;
+			}
+		}
+	}
 }
 
 void Game::Draw() const
@@ -175,8 +254,13 @@ void Game::Draw() const
 		}
 	}
 
-	if (!pelletsLeft)
+	if (!gameStarted)
 	{
-		Play::DrawDebugText({ Cfg::DISPLAY_W / 2, Cfg::DISPLAY_H / 2 }, "YOU WIN!");
+		Play::DrawDebugText({ Cfg::DISPLAY_W / 2, Cfg::DISPLAY_H / 2 }, "PRESS ARROW KEY TO START", 20);
 	}
+	else if (!pelletsLeft)
+	{
+		Play::DrawDebugText({ Cfg::DISPLAY_W / 2, Cfg::DISPLAY_H / 2 }, "YOU WIN!", 30);
+	}
+
 }

@@ -16,13 +16,16 @@ public:
 	void StepTowards(const Play::Point2f& tgt, float dt);
 	void Update(Game* game, float dt);
 	void Draw() const;
+	void ResetToSpawn();
 
 	// Variables
 	int gx = 0, gy = 0;
+	int spawnGX = 0, spawnGY = 0;
 	Play::Point2f pos{ 0,0 };
 	Play::Point2f target{ 0,0 };
 	Play::Point2f dir{ 0,0 };       // {-1,0,1}
 	Play::Point2f queued{ 0,0 };    // input buffer
 	float speed = 90.0f;
+	bool startedMoving = false;
 };
 

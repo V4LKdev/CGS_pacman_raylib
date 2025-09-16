@@ -121,12 +121,12 @@ inline void DrawCircle(const Point2f& center, int radius, const Colour& colour) 
     DrawCircleV(static_cast<Vector2>(center), static_cast<float>(radius), colour);
 }
 
-inline void DrawDebugText(const Point2f& pos, const char* text) {
-    constexpr int fontSize = 30;
+inline void DrawDebugText(const Point2f& pos, const char* text, int fontSize = 20, Colour col = cWhite)
+{
     const int textWidth = MeasureText(text, fontSize);
     const int x = static_cast<int>(pos.x - static_cast<float>(textWidth) / 2);
     const int y = static_cast<int>(pos.y - static_cast<float>(fontSize) / 2);
-    DrawText(text, x, y, fontSize, WHITE);
+    DrawText(text, x, y, fontSize, col);
 }
 
 } // namespace Play
