@@ -1,28 +1,36 @@
 #pragma once
 
 // Includes
+#include <memory>
+
 #include "Utils.h"
+#include "Pacman.h"
+#include "Ghost.h"
+#include "IGameBoard.h"
+#include "Modes.h"
 
 // Forward Declarations
-class Ghost;
-class Pacman;
 enum class GhostType;
 
-enum class GlobalMode { Scatter, Chase };
-
-// Class Declaration
-class Game
+// Game.h
+// The central coordinator of the Pac-Man game.
+// - Owns maze, Pac-Man, and ghosts
+// - Implements IGameBoard for ghost AI queries
+// - Manages global mode switching (Scatter/Chase), power-ups, and collisions
+class Game : public IGameBoard
 {
 public:
 	// Functions
 	Game();
 
 	static bool InBounds(int x, int y);
-	bool IsWall(int x, int y) const;
+	bool IsWall(int x, int y) const override;
 
-	Play::Point2f GetScatterTarget(GhostType type) const;
-	Play::Point2f GetPacDirection() const;
-	Play::Point2f GetGhostGrid(GhostType type) const;
+	Play::Point2f GetScatterTarget(GhostType type) const override;
+	Play::Point2f GetPacDirection() const override;
+	Play::Point2f GetGhostGrid(GhostType type) const override;
+	Play::Point2f GetPacPosition() const override;
+	GlobalMode GetGlobalMode() const override { return globalMode; }
 
 	void BuildArena();
 	void SpawnPowerUp();
@@ -44,11 +52,11 @@ public:
 
 	// Variables
 	TileType maze[Cfg::GRID_HEIGHT][Cfg::GRID_WIDTH]{};
-	Pacman* pac;
-	std::vector<Ghost*> ghosts;
+	std::unique_ptr<Pacman> pac;
+	std::vector<std::unique_ptr<Ghost>> ghosts;
 	float powerUpTimer = 0.0f;
 	bool powerUpPresent = false;
 	GlobalMode globalMode = GlobalMode::Scatter;
-	float modeTimer = 7.0f; // initial scatter time
+	float modeTimer = Cfg::SCATTER_DURATION; // initial scatter time
 	bool gameStarted = false;
 };

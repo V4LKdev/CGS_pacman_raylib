@@ -25,7 +25,7 @@ public:
 	Play::Point2f target{ 0,0 };
 	Play::Point2f dir{ 0,0 };       // {-1,0,1}
 	Play::Point2f queued{ 0,0 };    // input buffer
-	float speed = 90.0f;
+	float speed = Cfg::PACMAN_SPEED;
 	bool startedMoving = false;
 };
 

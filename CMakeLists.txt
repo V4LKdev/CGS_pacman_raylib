@@ -12,8 +12,10 @@ add_executable(PacmanRaylib
     HelloWorld/Pacman.cpp
     HelloWorld/Ghost.cpp
     HelloWorld/RaylibPlayMain.cpp
-    HelloWorld/RaylibPlayCompat.h
+    HelloWorld/FSM/GhostStateMachine.cpp
+    HelloWorld/FSM/GhostStates.cpp
 )
 
-target_include_directories(PacmanRaylib PUBLIC HelloWorld)
+target_include_directories(PacmanRaylib PUBLIC HelloWorld HelloWorld/FSM)
+
 target_link_libraries(PacmanRaylib PRIVATE raylib)

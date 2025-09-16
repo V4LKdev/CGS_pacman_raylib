@@ -1,298 +1,149 @@
-// This file's header
 #include "Ghost.h"
+#include "IGameBoard.h"
+#include "FSM/GhostStates.h"
+#include "Modes.h"
 
-// Other includes
-#include <climits>
-#include <random>
-#include "Game.h"
+#pragma region Helpers
 
-#pragma region Ghost Helpers
-
-static const Play::Point2f DIRS[4] = {
-	{0, -1}, // up
-	{1, 0},  // right
-	{0, 1},  // down
-	{-1, 0}  // left
-};
-
-const char* ToString(const GhostState s)
+const char* ToString(GhostState s)
 {
     switch (s) {
-    case GhostState::Scatter:    return "Scatter";
-    case GhostState::Chase:      return "Chase";
+    case GhostState::Idle: return "Idle";
+    case GhostState::Scatter: return "Scatter";
+    case GhostState::Chase: return "Chase";
     case GhostState::Frightened: return "Frightened";
-    case GhostState::Eaten:      return "Eaten";
+    case GhostState::Eaten: return "Eaten";
     }
     return "Unknown";
-}
-
-static inline Play::Point2f OppositeDir(const Play::Point2f& d)
-{
-	return { -d.x, -d.y };
-}
-
-static inline int DistI(int ax, int ay, int bx, int by)
-{
-	return abs(ax - bx) + abs(ay - by); // Manhattan distance
-}
-
-// Return list of legal directions from grid (gx,gy) avoiding immediate reverse
-static std::vector<Play::Point2f> GetLegalDirs(const Game* game, const int gx, const int gy, const Play::Point2f& currDir) {
-    std::vector<Play::Point2f> legal;
-    const Play::Point2f rev = OppositeDir(currDir);
-    bool haveNonReverse = false;
-
-    for (const Play::Point2f& d : DIRS) {
-        int nx = gx + int(d.x), ny = gy + int(d.y);
-        if (!game->IsWall(nx, ny)) {
-            // exclude reverse unless it's the only option
-            if (!(d.x == rev.x && d.y == rev.y)) {
-                legal.push_back(d);
-                haveNonReverse = true;
-            }
-        }
-    }
-
-    // If no legal non-reverse dirs, allow reverse if that's open
-    if (!haveNonReverse) {
-        for (const Play::Point2f& d : DIRS) {
-            int nx = gx + int(d.x), ny = gy + int(d.y);
-            if (!game->IsWall(nx, ny)) legal.push_back(d);
-        }
-    }
-    return legal;
-}
-
-// Choose the direction that minimizes Manhattan distance to target (tx,ty).
-static Play::Point2f ChooseBestDir(int gx, int gy, int tx, int ty, const std::vector<Play::Point2f>& candidates)
-{
-    if (candidates.empty()) return Play::Point2f{0,0};
-
-
-    auto priorityIndex = [](const Play::Point2f& d)->int {
-        if (d.x == 0 && d.y == -1) return 0; // up
-        if (d.x == -1 && d.y == 0) return 1; // left
-        if (d.x == 0 && d.y == 1) return 2; // down
-        return 3; // right
-    };
-
-
-    int bestScore = INT_MAX;
-    Play::Point2f best = candidates[0];
-    int bestPriority = INT_MAX;
-
-
-    for (const auto &d : candidates) {
-        int nx = gx + int(d.x), ny = gy + int(d.y);
-        int score = DistI(nx, ny, tx, ty);
-        int pr = priorityIndex(d);
-        if (score < bestScore || (score == bestScore && pr < bestPriority)) {
-            bestScore = score; best = d; bestPriority = pr;
-        }
-    }
-    return best;
 }
 
 #pragma endregion
 
 void Ghost::Init(GhostType t, int startGX, int startGY, Play::Colour col)
 {
-	type = t;
+    type = t;
     gx = spawnGX = startGX;
     gy = spawnGY = startGY;
-	pos = target = CenterOf(gx, gy);
-	dir = {0, 0};
-	colour = col;
-	baseColour = col;
+    pos = target = CenterOf(gx, gy);
+    dir = {0, 0};
+    colour = col;
+    baseColour = col;
+    baseSpeed = Cfg::BASE_GHOST_SPEED;
     speed = baseSpeed;
-    state = GhostState::Idle;
+
+    InitStateMachine();
 }
 
-
-void Ghost::EnterFrightened()
+void Ghost::InitStateMachine()
 {
-    if (state == GhostState::Eaten) return;
-    state = GhostState::Frightened;
-    colour = Play::cBlue;
-    speed = baseSpeed * 0.7f; // half speed when frightened
+    m_fsm = std::make_unique<GhostStateMachine>(this);
 
-    dir = OppositeDir(dir);
+    m_fsm->AddState(GhostState::Idle, MakeIdleState(this));
+    m_fsm->AddState(GhostState::Scatter, MakeScatterState(this));
+    m_fsm->AddState(GhostState::Chase, MakeChaseState(this));
+    m_fsm->AddState(GhostState::Frightened, MakeFrightenedState(this));
+    m_fsm->AddState(GhostState::Eaten, MakeEatenState(this));
+
+    // Set initial state
+    m_fsm->SetState(GhostState::Idle, nullptr);
 }
 
-void Ghost::ExitFrightened()
+void Ghost::SetState(GhostState newState, IGameBoard* board)
 {
-    if (state != GhostState::Frightened) return;
-    colour = baseColour;
-    speed = baseSpeed;
-    state = GhostState::Scatter;
+    if (m_fsm) m_fsm->SetState(newState, board);
 }
 
-void Ghost::SetEaten()
+GhostState Ghost::GetState() const
 {
-    state = GhostState::Eaten;
-    colour = Play::cWhite;
-    speed = baseSpeed * 1.6f;
+    if (m_fsm) return m_fsm->GetCurrentState();
+    return GhostState::Idle;
 }
 
-void Ghost::OnGlobalModeChange(const GlobalMode newMode)
+// Event APIs
+void Ghost::EnterFrightened(IGameBoard* board)
 {
-    if (state == GhostState::Scatter || state == GhostState::Chase)
-    {
-        state = (newMode == GlobalMode::Scatter) ? GhostState::Scatter : GhostState::Chase;
-    }
+    if (GetState() == GhostState::Eaten) return;
+    SetState(GhostState::Frightened, board);
+}
+
+void Ghost::ExitFrightened(IGameBoard* board)
+{
+    if (GetState() != GhostState::Frightened) return;
+    SetState(board && board->GetGlobalMode() == GlobalMode::Scatter ? GhostState::Scatter : GhostState::Chase, board);
+}
+
+void Ghost::SetEaten(IGameBoard* board)
+{
+    SetState(GhostState::Eaten, board);
+}
+
+void Ghost::OnGlobalModeChange(IGameBoard* board, GlobalMode newMode)
+{
+    if (GetState() == GhostState::Eaten || GetState() == GhostState::Frightened || GetState() == GhostState::Idle) return;
+
+    newMode == GlobalMode::Scatter ? SetState(GhostState::Scatter, board) : SetState(GhostState::Chase, board);
 }
 
 void Ghost::ResetToSpawn()
 {
-    Init(type, spawnGX, spawnGY, baseColour);
+    gx = spawnGX; gy = spawnGY;
+    pos = target = CenterOf(gx, gy);
+    dir = {0,0};
+    colour = baseColour;
+    speed = baseSpeed;
+    m_fsm->SetState(GhostState::Idle, nullptr);
 }
 
-
-Play::Point2f Ghost::TickAI(const Game* game, int pacGX, int pacGY) const
+bool Ghost::Update(IGameBoard* board, int pacGX, int pacGY, float dt)
 {
-	// current grid coords
-    int cgx = gx, cgy = gy;
+    // Update FSM
+    if (m_fsm) m_fsm->Update(board, pacGX, pacGY, dt);
 
-    // Idle: no movement
-    if (state == GhostState::Idle) {
-        return Play::Point2f{0,0};
-    }
-
-    // Eaten: target spawn position
-    if (state == GhostState::Eaten) {
-        int tx = spawnGX, ty = spawnGY;
-        auto legal = GetLegalDirs(game, cgx, cgy, dir);
-        return ChooseBestDir(cgx, cgy, tx, ty, legal);
-    }
-
-    // Frightened: random legal direction (include reverse for randomness)
-    if (state == GhostState::Frightened) {
-        std::vector<Play::Point2f> legal;
-        for (const Play::Point2f& d : DIRS) {
-            int nx = cgx + int(d.x), ny = cgy + int(d.y);
-            if (!game->IsWall(nx, ny)) legal.push_back(d);
-        }
-        if (legal.empty()) return Play::Point2f{0,0};
-
-
-        // Use local RNG (if you prefer to use a shared RNG from Game, replace this block)
-        static std::random_device rd;
-        static std::mt19937 rng(rd());
-        std::uniform_int_distribution<int> dist(0, static_cast<int>(legal.size()) - 1);
-        int idx = dist(rng);
-        return legal[idx];
-    }
-
-    // Scatter / Chase: compute a target tile, then pick best direction
-    int tx = cgx, ty = cgy;
-
-    if (state == GhostState::Scatter) {
-        auto corner = game->GetScatterTarget(type);
-        tx = corner.x; ty = corner.y;
-    }
-    else if (state == GhostState::Chase) {
-        switch (type) {
-        case GhostType::BLINKY:
-            // target Pac-Man's current tile
-            tx = pacGX; ty = pacGY;
-            break;
-        case GhostType::PINKY:
-            {
-                // Ambusher: target 4 tiles ahead of Pac's direction
-                auto pacDir = game->GetPacDirection();
-                tx = pacGX + int(pacDir.x) * 4;
-                ty = pacGY + int(pacDir.y) * 4;
-                break;
-            }
-        case GhostType::INKY:
-            {
-                // Flanker: uses Blinky & Pac
-                auto pacDir = game->GetPacDirection();
-                int pacAheadX = pacGX + int(pacDir.x) * 2;
-                int pacAheadY = pacGY + int(pacDir.y) * 2;
-                auto blinkyGrid = game->GetGhostGrid(GhostType::BLINKY);
-                tx = pacAheadX * 2 - blinkyGrid.x;
-                ty = pacAheadY * 2 - blinkyGrid.y;
-                break;
-            }
-        case GhostType::CLYDE:
-            {
-                int dist = DistI(cgx, cgy, pacGX, pacGY);
-                if (dist > 8) { tx = pacGX; ty = pacGY; }
-                else { auto corner = game->GetScatterTarget(type); tx = corner.x; ty = corner.y; }
-                break;
-            }
-        }
-    }
-
-    auto legal = GetLegalDirs(game, cgx, cgy, dir);
-    return ChooseBestDir(cgx, cgy, tx, ty, legal);
-}
-
-void Ghost::Update(Game* game, int pacGX, int pacGY, float dt)
-{
-    // Decide next direction when centered on tile
+    // Movement code
     if (AtCenter(pos, target))
     {
         gx = int(pos.x) / Cfg::TILE_SIZE;
         gy = int(pos.y) / Cfg::TILE_SIZE;
 
-        Play::Point2f next = TickAI(game, pacGX, pacGY);
-
-        int nx = gx + int(next.x), ny = gy + int(next.y);
-        if (!game->IsWall(nx, ny))
-        {
-            dir = next;
-        }
-        else
-        {
-            int fx = gx + int(dir.x), fy = gy + int(dir.y);
-            if (game->IsWall(fx, fy))
-            {
-                dir = {0, 0};
-            }
-        }
-
         int tx = gx + int(dir.x), ty = gy + int(dir.y);
-        target = !game->IsWall(tx, ty) ? CenterOf(tx, ty) : CenterOf(gx, gy);
+        if (board && board->IsWall(tx, ty)) dir = {0,0};
+        target = (board && !board->IsWall(tx, ty)) ? CenterOf(tx, ty) : CenterOf(gx, gy);
     }
 
-    // Movement
     Play::Point2f d{ target.x - pos.x, target.y - pos.y };
-    float dist = std::sqrt(d.x * d.x + d.y * d.y);
+    float dist = Distance(pos, target);
     float step = speed * dt;
 
-    if (dist < 0.0001f || step >= dist)
-    {
-        pos = target;
-    }
+    if (dist < Cfg::EPS || step >= dist) pos = target;
     else
     {
         pos.x += (d.x / dist) * step;
         pos.y += (d.y / dist) * step;
     }
 
-    // If ghost is Eaten and reached spawn, respawn to Scatter
-    if (state == GhostState::Eaten)
+    // Check collision with Pac-Man - only if not in Eaten state
+    if (GetState() != GhostState::Eaten && board)
     {
-        int curGX = int(pos.x) / Cfg::TILE_SIZE;
-        int curGY = int(pos.y) / Cfg::TILE_SIZE;
-        if (curGX == spawnGX && curGY == spawnGY) {
-            // Arrived at spawn
-            state = GhostState::Scatter;
-            colour = baseColour;
-            speed = baseSpeed;
-            // place exactly at center
-            pos = target = CenterOf(spawnGX, spawnGY);
-            dir = {0,0};
+        const Play::Point2f pacPos = board->GetPacPosition();
+        const float ghostR = ActorRadius();
+        const float pacR = ActorRadius();
+        const float totalR = ghostR + pacR + Cfg::COLLISION_PAD;
+        if (WithinRadius(pos, pacPos, totalR))
+        {
+            return true; // Collision detected
         }
     }
+
+    return false; // No collision
 }
 
 void Ghost::Draw() const
 {
-	Play::DrawCircle(pos, Cfg::TILE_SIZE / 2 - 2, colour);
-
+    Play::DrawCircle(pos, Cfg::TILE_SIZE / 2 - Cfg::ACTOR_DRAW_INSET, colour);
     Play::Point2f textPos = { pos.x, pos.y - Cfg::TILE_SIZE };
-    DrawDebugText(textPos, ToString(state), 14, Play::cWhite);
+
+    if (Cfg::DEBUG_MODE)
+    {
+        DrawDebugText(textPos, ToString(GetState()), 14, Play::cWhite);
+    }
 }

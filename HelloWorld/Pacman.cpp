@@ -37,7 +37,7 @@ void Pacman::StepTowards(const Play::Point2f& tgt, float dt)
 	Play::Point2f d{ tgt.x - pos.x, tgt.y - pos.y };
 	float dist = std::sqrt(d.x * d.x + d.y * d.y);
 	float step = speed * dt;
-	if (dist < 0.0001f || step >= dist) { pos = tgt; return; }
+	if (dist < Cfg::EPS || step >= dist) { pos = tgt; return; }
 	pos.x += (d.x / dist) * step;
 	pos.y += (d.y / dist) * step;
 
@@ -54,13 +54,13 @@ void Pacman::Update(Game* game, float dt)
 		// Eat pellet or power-up
 		if (game->InBounds(gx, gy))
 		{
-			if (game->maze[gy][gx] == TILE_PELLET)
+			if (game->maze[gy][gx] == TileType::PELLET)
 			{
-				game->maze[gy][gx] = TILE_EMPTY;
+				game->maze[gy][gx] = TileType::EMPTY;
 			}
-			else if (game->maze[gy][gx] == TILE_POWERUP)
+			else if (game->maze[gy][gx] == TileType::POWERUP)
 			{
-				game->maze[gy][gx] = TILE_EMPTY;
+				game->maze[gy][gx] = TileType::EMPTY;
 				game->ActivatePowerUp();
 			}
 		}
@@ -90,7 +90,7 @@ void Pacman::Update(Game* game, float dt)
 
 void Pacman::Draw() const
 {
-	Play::DrawCircle(pos, Cfg::TILE_SIZE / 2 - 2, Play::cYellow);
+	Play::DrawCircle(pos, Cfg::TILE_SIZE / 2 - Cfg::ACTOR_DRAW_INSET, Play::cYellow);
 }
 
 void Pacman::ResetToSpawn()
@@ -98,4 +98,3 @@ void Pacman::ResetToSpawn()
 	Init(spawnGX, spawnGY);
 	startedMoving = false;
 }
-

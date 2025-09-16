@@ -1,62 +1,68 @@
 #pragma once
 
-// Includes
+#include <memory>
 #include "Utils.h"
+#include "IGameBoard.h"
+#include "FSM/GhostStateMachine.h"
 
 enum class GlobalMode;
-// Forward Declarations
-class Game;
 
 // Enumerations
 enum class GhostType
-{ 
-	BLINKY,
-	INKY, 
-	PINKY,
-	CLYDE 
-};
-
-enum class GhostState
 {
-	Idle,
-	Scatter,
-	Chase,
-	Frightened,
-	Eaten
+	BLINKY,
+	INKY,
+	PINKY,
+	CLYDE
 };
 
-// Class Declaration
+// Ghost.h
+// - represents a single enemy agent controlled by a finite-state-machine.
+// - Keeps only data & plumbing. behavior implemented in FSM states (see FSM/*).
+// - Uses IGameBoard for all external queries to avoid coupling to Game.
 class Ghost
 {
 public:
-	// Functions
+	// lifecycle
 	void Init(GhostType t, int startGX, int startGY, Play::Colour col);
-	Play::Point2f TickAI(const Game* game, int pacGX, int pacGY) const;
-	void Update(Game* game, int pacGX, int pacGY, float dt);
+	// Update returns true if this ghost collided with Pac-Man this tick.
+	// Movement and FSM run here; resolution (eat vs player death) is handled by Game.
+	bool Update(IGameBoard* board, int pacGX, int pacGY, float dt);
 	void Draw() const;
 
-	void EnterFrightened();
-	void ExitFrightened();
-	void SetEaten();
-	void OnGlobalModeChange(GlobalMode newMode);
+	// event API
+	void EnterFrightened(IGameBoard* board);
+	void ExitFrightened(IGameBoard* board);
+	void SetEaten(IGameBoard* board);
+	void OnGlobalModeChange(IGameBoard* board, GlobalMode newMode);
 	void ResetToSpawn();
 
-	// Variables
-	GhostType type{GhostType::BLINKY };
+	// FSM API
+
+	// Build the FSM states and set the initial state.
+	// OnEnter may receive nullptr during initialization; states must handle that.
+	void InitStateMachine();
+	void SetState(GhostState newState, IGameBoard* board = nullptr);
+	GhostState GetState() const;
+
+	// accessors used by states
+	Play::Point2f GetPos() const { return pos; }
+	int GetGX() const { return gx; }
+	int GetGY() const { return gy; }
+
+	// --- fields ---
+	GhostType type{ GhostType::BLINKY };
 	int gx = 0, gy = 0;
 	int spawnGX = 0, spawnGY = 0;
 	Play::Point2f pos{ 0,0 };
 	Play::Point2f target{ 0,0 };
 	Play::Point2f dir{ 0,0 };
-	// Current speed (may change when power-up active)
-	float speed = 80.0f;
-	// Stored default speed to restore after power-up expires
-	float baseSpeed = 80.0f;
-	// Current colour (may change when power-up active)
+
+	float speed = Cfg::BASE_GHOST_SPEED;
+	float baseSpeed = Cfg::BASE_GHOST_SPEED;
 	Play::Colour colour{ Play::cRed };
-	// Stored default colour to restore after power-up expires
 	Play::Colour baseColour{ Play::cRed };
 
-	// Statemachine
-	GhostState state{ GhostState::Idle };
+private:
+	std::unique_ptr<GhostStateMachine> m_fsm;
 };
